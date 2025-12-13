@@ -1,0 +1,14 @@
+server:
+  port: 8080
+
+spring:
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      timeout: 2s
+
+analytics:
+  rate-limit:
+    max-requests: 200
+    window-seconds: 60

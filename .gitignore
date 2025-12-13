@@ -1,0 +1,5 @@
+target/
+service/target/
+mock-generator/target/
+.idea/
+.DS_Store
