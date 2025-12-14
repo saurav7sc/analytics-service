@@ -1,5 +1,6 @@
 package com.analytics.controller;
 
+import com.analytics.config.MetricsWindowConfig;
 import com.analytics.dto.ActiveSessionEntry;
 import com.analytics.dto.ActiveSessionsResponse;
 import com.analytics.dto.ActiveUsersResponse;
@@ -19,10 +20,6 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1/metrics")
 public class MetricsController {
 
-    private static final long ACTIVE_USER_WINDOW_SECONDS = 300;
-    private static final long PAGE_VIEW_WINDOW_SECONDS = 900;
-    private static final long SESSION_WINDOW_SECONDS = 300;
-
     private final MetricsService metricsService;
 
     public MetricsController(MetricsService metricsService) {
@@ -31,7 +28,10 @@ public class MetricsController {
 
     @GetMapping("/active-users")
     public ActiveUsersResponse activeUsers() {
-        return new ActiveUsersResponse(metricsService.activeUsersCount(), ACTIVE_USER_WINDOW_SECONDS);
+        return new ActiveUsersResponse(
+                metricsService.activeUsersCount(),
+                MetricsWindowConfig.ACTIVE_USER_WINDOW.toSeconds()
+        );
     }
 
     @GetMapping("/page-views")
@@ -40,7 +40,7 @@ public class MetricsController {
                 .stream()
                 .map(m -> new PageViewEntry(m.getPageUrl(), m.getCount()))
                 .collect(Collectors.toList());
-        return new PageViewsResponse(entries, PAGE_VIEW_WINDOW_SECONDS);
+        return new PageViewsResponse(entries, MetricsWindowConfig.PAGE_VIEW_WINDOW.toSeconds());
     }
 
     @GetMapping("/active-sessions")
@@ -49,27 +49,32 @@ public class MetricsController {
         List<ActiveSessionEntry> entries = metrics.stream()
                 .map(m -> new ActiveSessionEntry(m.getUserId(), m.getActiveSessions()))
                 .collect(Collectors.toList());
-        return new ActiveSessionsResponse(entries, SESSION_WINDOW_SECONDS);
+        return new ActiveSessionsResponse(entries, MetricsWindowConfig.SESSION_WINDOW.toSeconds());
     }
 
     @GetMapping("/summary")
     public CombinedMetricsResponse summary() {
-        List<PageViewEntry> pages = metricsService.topPages(5)
+        return new CombinedMetricsResponse(
+                metricsService.activeUsersCount(),
+                MetricsWindowConfig.ACTIVE_USER_WINDOW.toSeconds(),
+                getPageViewEntries(),
+                MetricsWindowConfig.PAGE_VIEW_WINDOW.toSeconds(),
+                getActiveSessionEntries(),
+                MetricsWindowConfig.SESSION_WINDOW.toSeconds()
+        );
+    }
+
+    private List<PageViewEntry> getPageViewEntries() {
+        return metricsService.topPages(5)
                 .stream()
                 .map(m -> new PageViewEntry(m.getPageUrl(), m.getCount()))
                 .collect(Collectors.toList());
-        List<ActiveSessionEntry> sessions = metricsService.activeSessionsByUser()
+    }
+
+    private List<ActiveSessionEntry> getActiveSessionEntries() {
+        return metricsService.activeSessionsByUser()
                 .stream()
                 .map(m -> new ActiveSessionEntry(m.getUserId(), m.getActiveSessions()))
                 .collect(Collectors.toList());
-
-        return new CombinedMetricsResponse(
-                metricsService.activeUsersCount(),
-                ACTIVE_USER_WINDOW_SECONDS,
-                pages,
-                PAGE_VIEW_WINDOW_SECONDS,
-                sessions,
-                SESSION_WINDOW_SECONDS
-        );
     }
 }
