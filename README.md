@@ -133,11 +133,13 @@ flowchart TB
 - Service port: `server.port` (default 8080).
 
 ### Assumptions & Tradeoffs
-- Metrics aggregation is strict on event types. `page_view` metrics are only calculated for events where `event_type == "page_view"`. Other event types are ignored for active users/sessions/page views.
-- Replaced blocking `KEYS` command with non-blocking `SCAN` to safely fetch metrics without freezing the server
-
+- Metrics are derived exclusively from events where `event_type == "page_view"`. All other event types are ignored.
+- Used non-blocking `SCAN` command instead of blocking `KEYS` command, to safely fetch metrics without freezing the server.
+- If Redis becomes unavailable, the system serves the last known data from local memory. We prioritize keeping the dashboard visible (Availability) over strict freshness (Consistency) during outages.
+- If Redis is unavailable, the rate limiter rejects requests (Fail-Closed) rather than allowing unrestricted traffic (Fail-Open).
 ### Future Improvements
 1) Persist raw events to Kafka/S3 for replay and offline analytics.  
 2) Add Grafana/Prometheus metrics and health check for operations.  
 3) Implement a 'retry queue' to capture and process rate-limited events later.  
 4) Add integration test and load test.
+5) Enforce rate limiting at the API gateway/load balancer to remove the single point of failure in the application layer and improve performance.
