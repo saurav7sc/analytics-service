@@ -24,6 +24,9 @@ public class EventProcessor {
     }
 
     public void process(Event event) {
+        if (!"page_view".equals(event.getEventType())) {
+            return;
+        }
         activeUsersRepository.recordActivity(event.getUserId(), event.getTimestamp());
         sessionRepository.recordSession(event.getUserId(), event.getSessionId(), event.getTimestamp());
         pageViewRepository.recordPageView(event.getPageUrl(), event.getTimestamp());

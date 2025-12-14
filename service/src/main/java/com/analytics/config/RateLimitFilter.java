@@ -12,8 +12,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 
 @Component
@@ -39,23 +37,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         String key = request.getRemoteAddr();
         if (!rateLimiterService.allowRequest(key, Instant.now())) {
-            log.warn("Rate limited request ip={} path={} body={}", key, request.getRequestURI(), readBody(request));
+            String userAgent = request.getHeader("User-Agent");
+            log.warn("Rate limited request ip={} path={} userAgent={}", key, request.getRequestURI(), userAgent);
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.getWriter().write("Rate limit exceeded");
             return;
         }
         filterChain.doFilter(request, response);
-    }
-
-    private String readBody(HttpServletRequest request) {
-        try {
-            byte[] buffer = request.getInputStream().readAllBytes();
-            Charset charset = request.getCharacterEncoding() != null
-                    ? Charset.forName(request.getCharacterEncoding())
-                    : StandardCharsets.UTF_8;
-            return new String(buffer, charset);
-        } catch (Exception ex) {
-            return "<unreadable>";
-        }
     }
 }

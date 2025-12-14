@@ -15,10 +15,6 @@ public class ValidationService {
         this.clock = clock;
     }
 
-    public ValidationService() {
-        this(Clock.systemUTC());
-    }
-
     public void validate(EventRequest request) {
         EventValidator.validate(request);
         Instant now = Instant.now(clock);
