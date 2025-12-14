@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Analytics</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #111827;
+            --accent: #22d3ee;
+            --muted: #9ca3af;
+            --text: #e5e7eb;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+            background: radial-gradient(circle at 20% 20%, rgba(34,211,238,0.12), transparent 35%), var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        header {
+            padding: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 {
+            margin: 0;
+            letter-spacing: 0.5px;
+            font-size: 24px;
+        }
+        .badge {
+            background: rgba(34,211,238,0.15);
+            border: 1px solid rgba(34,211,238,0.3);
+            color: var(--text);
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 13px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            padding: 0 24px 24px;
+        }
+        .card {
+            background: var(--panel);
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: 0 15px 60px rgba(0,0,0,0.25);
+        }
+        .label {
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 1px;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+        .value {
+            font-size: 36px;
+            font-weight: 700;
+        }
+        ul { list-style: none; padding: 0; margin: 0; }
+        li { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        li:last-child { border-bottom: none; }
+        .muted { color: var(--muted); font-size: 14px; }
+        form {
+            display: grid;
+            gap: 8px;
+        }
+        input, select {
+            background: #0b1222;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: var(--text);
+        }
+        button {
+            background: var(--accent);
+            border: none;
+            color: #0b1222;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        @media (max-width: 600px) {
+            header { flex-direction: column; align-items: flex-start; gap: 8px; }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Real-Time Analytics</h1>
+    <div class="badge" id="last-updated">Updating…</div>
+</header>
+
+<div class="grid">
+    <div class="card">
+        <div class="label">Active users (5m)</div>
+        <div class="value" id="active-users">0</div>
+        <div class="muted">Users sending events in the last 5 minutes.</div>
+    </div>
+
+    <div class="card">
+        <div class="label">Top pages (15m)</div>
+        <ul id="top-pages">
+            <li class="muted">Loading…</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <div class="label">Active sessions by user (5m)</div>
+        <ul id="active-sessions">
+            <li class="muted">Loading…</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <div class="label">Send test event</div>
+        <form id="event-form">
+            <input type="text" name="user_id" placeholder="user id (e.g. usr_1)" required>
+            <input type="text" name="session_id" placeholder="session id (e.g. sess_1)" required>
+            <input type="text" name="page_url" placeholder="page url (e.g. /home)" required>
+            <select name="event_type">
+                <option value="page_view">page_view</option>
+                <option value="click">click</option>
+                <option value="scroll">scroll</option>
+            </select>
+            <button type="submit">Send</button>
+            <div class="muted" id="event-status"></div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const lastUpdated = document.getElementById('last-updated');
+    const activeUsersEl = document.getElementById('active-users');
+    const topPagesEl = document.getElementById('top-pages');
+    const activeSessionsEl = document.getElementById('active-sessions');
+    const eventForm = document.getElementById('event-form');
+    const eventStatus = document.getElementById('event-status');
+
+    async function fetchMetrics() {
+        try {
+            const res = await fetch('/api/v1/metrics/summary');
+            if (!res.ok) throw new Error('Failed to fetch metrics');
+            const data = await res.json();
+            activeUsersEl.textContent = data.activeUsers;
+            renderList(topPagesEl, data.topPages, item => `${item.pageUrl} — ${item.count}`);
+            renderList(activeSessionsEl, data.activeSessionsByUser, item => `${item.userId} — ${item.activeSessions} session(s)`);
+            lastUpdated.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+        } catch (err) {
+            lastUpdated.textContent = 'Error loading metrics';
+            console.error(err);
+        }
+    }
+
+    function renderList(element, items, formatter) {
+        element.innerHTML = '';
+        if (!items || items.length === 0) {
+            element.innerHTML = '<li class="muted">No data yet</li>';
+            return;
+        }
+        items.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = formatter(item);
+            element.appendChild(li);
+        });
+    }
+
+    eventForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(eventForm);
+        const payload = {
+            timestamp: new Date().toISOString(),
+            user_id: formData.get('user_id'),
+            session_id: formData.get('session_id'),
+            page_url: formData.get('page_url'),
+            event_type: formData.get('event_type'),
+        };
+        eventStatus.textContent = 'Sending...';
+        eventForm.querySelector('button').disabled = true;
+        try {
+            const res = await fetch('/api/v1/events', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) throw new Error('Request rejected');
+            eventStatus.textContent = 'Sent!';
+            fetchMetrics();
+        } catch (err) {
+            eventStatus.textContent = 'Failed to send event';
+            console.error(err);
+        } finally {
+            eventForm.querySelector('button').disabled = false;
+        }
+    });
+
+    fetchMetrics();
+    setInterval(fetchMetrics, 30000);
+</script>
+</body>
+</html>
