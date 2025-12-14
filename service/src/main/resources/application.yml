@@ -10,5 +10,5 @@ spring:
 
 analytics:
   rate-limit:
-    max-requests: 200
-    window-seconds: 60
+    capacity: 200
+    refill-per-second: 3.33
