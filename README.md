@@ -92,8 +92,8 @@ flowchart TB
     subgraph API["Spring Boot Service"]
         direction TB
         ratelimit["Rate Limiter"]
-        ingest["POST /api/events<br/>(Ingestion)"]
-        metrics["GET /api/metrics<br/>(Analytics)"]
+        ingest["POST /api/v1/events<br/>(Ingestion)"]
+        metrics["GET /api/v1/metrics<br/>(Analytics)"]
     end
 
     subgraph Redis["Redis"]
