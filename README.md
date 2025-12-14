@@ -43,6 +43,7 @@ mvn -pl service -am spring-boot:run
       "session_id": "sess_456"
     }
     ```
+  - Metrics handling: only `event_type` of `page_view` is counted toward active users, active sessions, and page views. Other event types are accepted but ignored for these metrics.
   - Rate limited (default ~200 req/min per client IP). Returns `202 Accepted`.
 - `GET /api/v1/metrics/active-users` → `{ "count": 12, "windowSeconds": 300 }`
 - `GET /api/v1/metrics/page-views` → top 5 pages from the last 15 minutes.
@@ -132,7 +133,7 @@ flowchart TB
 - Service port: `server.port` (default 8080).
 
 ### Assumptions & Tradeoffs
-- Metrics aggregation is strict on event types. `page_view` metrics are only calculated for events where `event_type == "page_view"`. Other event types are ignored for that metric.
+- Metrics aggregation is strict on event types. `page_view` metrics are only calculated for events where `event_type == "page_view"`. Other event types are ignored for active users/sessions/page views.
 - Replaced blocking `KEYS` command with non-blocking `SCAN` to safely fetch metrics without freezing the server
 
 ### Future Improvements
