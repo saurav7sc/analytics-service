@@ -3,8 +3,8 @@
 Spring Boot service that ingests JSON events, stores metrics in Redis sorted sets, and serves a lightweight dashboard.
 
 ### Features
-- POST `/api/v1/events` ingests validated events with Redis-backed token bucket rate limiting (fails closed if Redis is unavailable; no in-memory fallback).
-- Rolling metrics from Redis: active users (5m), page views by URL (15m), active sessions per user (5m). Data survives app restarts.
+- POST `/api/v1/events` ingests validated events with rate limiting.
+- Rolling metrics from Redis: active users (5m), page views by URL (15m), active sessions per user (5m).
 - Dashboard at `/` auto-refreshes every 30s.
 - Mock event generator CLI to push load.
 - Dockerfile and docker-compose for one-command startup.
@@ -19,7 +19,7 @@ Spring Boot service that ingests JSON events, stores metrics in Redis sorted set
 ```bash
 docker compose up --build
 # app available at http://localhost:8080
-# redis exposed on localhost:6379 with AOF persistence
+# redis exposed on localhost:6379
 ```
 
 ### Run locally
