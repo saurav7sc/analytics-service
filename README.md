@@ -97,9 +97,8 @@ flowchart TB
 
     subgraph Redis["Redis"]
         users["stats:users"]
-        sessions["stats:sessions"]
+        sessions["stats:sessions:{userId}"]
         pviews["stats:pviews:{url}"]
-        known["stats:known_urls"]
     end
 
     %% The Flows
@@ -131,6 +130,10 @@ flowchart TB
 - Redis: `SPRING_DATA_REDIS_HOST` (default `localhost`), `SPRING_DATA_REDIS_PORT` (default `6379`), `spring.data.redis.timeout` (default `2s`).
 - Rate limiting (token bucket): `analytics.rate-limit.capacity` (default 200 burst tokens), `analytics.rate-limit.refill-per-second` (default 3.33 tokens/sec ≈ 200 tokens/min).
 - Service port: `server.port` (default 8080).
+
+### Assumptions & Tradeoffs
+- Metrics aggregation is strict on event types. `page_view` metrics are only calculated for events where `event_type == "page_view"`. Other event types are ignored for that metric.
+- Replaced blocking `KEYS` command with non-blocking `SCAN` to safely fetch metrics without freezing the server
 
 ### Future Improvements
 1) Persist raw events to Kafka/S3 for replay and offline analytics.  
