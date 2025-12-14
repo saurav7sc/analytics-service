@@ -3,7 +3,7 @@
 Spring Boot service that ingests JSON events, stores metrics in Redis sorted sets, and serves a lightweight dashboard.
 
 ### Features
-- POST `/api/v1/events` ingests validated events with Redis-backed token bucket rate limiting (fails closed if Redis is unavailable; no in-memory fallback).
+- POST `/api/v1/events` ingests validated events with rate limiting and logs any rate-limited requests.
 - Rolling metrics from Redis: active users (5m), page views by URL (15m), active sessions per user (5m). Data survives app restarts.
 - Dashboard at `/` auto-refreshes every 30s.
 - Mock event generator CLI to push load.
@@ -135,4 +135,5 @@ flowchart TB
 ### Future Improvements
 1) Persist raw events to Kafka/S3 for replay and offline analytics.  
 2) Add Grafana/Prometheus metrics and health check for operations.  
-3) Add integration test and load test.
+3) Implement a 'retry queue' to capture and process rate-limited events later.  
+4) Add integration test and load test.
